@@ -1,5 +1,8 @@
 ;;; Advent of Code 2025, Day 3 - Lobby
 
+(defun trim-crlf (str)
+  (when str (string-trim '(#\Return #\Linefeed) str)))
+
 (defun to-digit (c)
   (- (char-code c) (char-code #\0)))
 
@@ -17,24 +20,33 @@
 
 (defun part1 (fn)
   (with-open-file (f (pathname fn))
-    (loop for line = (read-line f nil)
+    (loop for line = (trim-crlf (read-line f nil))
           while line
           summing (max-pair line))))
 
-(defun remove-min (s)
-  "remove first smallest digit"
-  (loop for d from (char-code #\0) upto (char-code #\9)
-        when (find (code-char d) s)
-        return (remove (code-char d) s :count 1)))
+;----------------------------------------------------------------------
 
-(defun shrink (s l)
-  (if (<= (length s) l)
-    s
-    (shrink (remove-min s) l)))
+(defun find-max (s start &optional (end (length s)))
+  (when (< start end)
+    (let (idx val)
+      (dotimes (i (- end start) (values (to-digit val) (+ start idx)))
+        (when (or (null idx)
+                  (char> (char s (+ start i)) val))
+          (setq idx i
+                val (char s (+ start i))))))))
+
+(defun max-n (s start end &optional result)
+  (if (> end (length s))
+    (nreverse result)
+    (multiple-value-bind (val idx) (find-max s start end)
+      (max-n s (1+ idx) (1+ end) (cons val result)))))
+
+(defun part2-cvt (line)
+  (apply #'digits-to-num (max-n line 0 (- (length line) 11))))
 
 (defun part2 (fn)
   (with-open-file (f (pathname fn))
-    (loop for line = (read-line f nil)
+    (loop for line = (trim-crlf (read-line f nil))
           while line
-          summing (parse-integer (shrink line 12)))))
+          summing (part2-cvt line))))
 
